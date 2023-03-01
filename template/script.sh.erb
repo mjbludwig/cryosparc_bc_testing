@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+
+# Clean the environment
+module purge
+
+# Set working directory to home directory
+cd "${HOME}"
+
+#
+# Launch Xfce Window Manager and Panel
+#
+
+(
+  export SEND_256_COLORS_TO_REMOTE=1
+  export XDG_CONFIG_HOME="<%= session.staged_root.join("config") %>"
+  export XDG_DATA_HOME="<%= session.staged_root.join("share") %>"
+  export XDG_CACHE_HOME="$(mktemp -d)"
+  module restore
+  set -x
+  xfwm4 --compositor=off --daemon --sm-client-disable
+  xsetroot -solid "#D3D3D3"
+  xfsettingsd --sm-client-disable
+  xfce4-panel --sm-client-disable
+) &
+
+#
+# Start MATLAB
+#
+
+# Load the required environment
+start_cryosparc () 
+{
+	
+# remove the old unix sock lock
+if ls /tmp/cryosparc-*sock 1> /dev/null 2>&1; then
+	lockfiles=`ls /tmp/cryosparc-*sock`
+	if [[ $lockfiles != *"cannot access"* ]];
+	then
+		for i in $lockfiles
+		do
+			owner=`stat -c %U $i`
+				if [[ $owner == $USER ]]
+				then
+				echo "  Removing file $i"
+				rm $i
+				rm /tmp/mongodb*sock
+				rmdir /tmp/firefox
+			else
+				echo "  There is a $i lockfile left by $owner from a previous session. "
+				echo "  CryoSparc cannot obtain the database socket because this file can not be delete by you. "
+				echo "  Please ask $owner to delete $i"
+				echo "  Unfortunately, I have to quit."
+				exit 1
+			fi
+		done
+	fi
+	else
+	echoinfo "  No lock founded. "
+	fi
+
+	echoinfo "  Starting the Cryosparc "
+	cryosparcm restart
+	#sleep 5
+	# check if master web is alive
+	firefox http://localhost:49427/ 2>/dev/null &
+}
+shutdown_master () 
+{	
+	echo "  Shutting down Cryosparc Master. "
+	cryosparcm stop
+}
+
+cleanup () 
+{
+	echo "  Job is ending, cleaning up. "
+
+	shutdown_master
+
+	echo "  Removing sock lock file. "
+
+	rm /tmp/cryosparc*sock
+	rm /tmp/mongodb*sock
+
+}
+
+
+# Figure out the port based on uid
+IMUID=$(getent passwd $UID | awk -F: '{print $3}')
+if [ $IMUID -gt 65535 ]; then
+        echo UID $IMUID too big
+        MUID=$(echo "$IMUID % 65535" | bc)
+        # add the mod to the above result so we don't have clashes
+      export MUID=$(expr $MUID + $(expr $IMUID / $MUID))
+else
+        export MUID=$IMUID
+fi
+if [ $IMUID -lt 2000 ]; then
+       export MUID=$(expr $IMUID \* 2 \+ 60000)
+fi
+
+
+
+module add firefox/110.0
+# This is where you add the crysparc install bin dir to the path, since each is per user
+export PATH=$PATH:/nobackup/users/$USER/cryosparc/$MUID/cryosparc_master/bin
+
+trap 'cleanup' SIGINT SIGQUIT SIGTERM SIGKILL
+start_cryosparc
+sleep infinity
+cleanup
+

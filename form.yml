@@ -1,0 +1,26 @@
+---
+cluster: <cluster name>
+
+attributes:
+  desktop: "xfce"
+  bc_vnc_idle: 0
+  bc_vnc_resolution:
+    required: true
+  node_type: null    
+
+  time:
+    label: "Time (in hours)"
+    widget: "number_field"
+    required: "True"
+    help: "Enter time in hours, current max of 168 hours (7 days)."
+    value: "1"
+    min: 1
+    max: 168
+    step: 1
+
+form:
+  - bc_vnc_idle
+  - desktop
+  - time
+  - bc_vnc_resolution
+  - bc_email_on_started

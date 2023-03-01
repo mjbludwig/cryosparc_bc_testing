@@ -1,0 +1,13 @@
+---
+batch_connect:
+  template: vnc
+
+script:
+  native:
+    - "-N"
+    - "1"
+    - "-n"
+    - "1"
+    - "--mem=8G"
+    - "--time=<%= time %>:00:00"
+
