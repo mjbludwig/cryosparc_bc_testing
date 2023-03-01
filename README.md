@@ -15,6 +15,7 @@ This app assumes a bit of somewhat standard OOD setup along with some cryosparc 
 
 ### Important things to remember
 
+* Remember to set the "cluster" config in `form.yml.erb` for your cluster
 * Cryosparc takes a few seconds to start up fully so if atm you may run into firefox opening automatically and trying to hit the local port before Cryosparc has fully started, requireing a page refresh. 
 * Cryosparc is _very_ particular with lock files, most importantly `/tmp/cryosparc*sock`. See the cleanup section of `template/script` to get a sense. 
 * Most of the cleanup is functional and needed but the `trap 'cleanup' SIGINT SIGQUIT SIGTERM SIGKILL` is not really working at this point as the "script.sh.erb" script is actually called as a child process of the actual OOD sbatch script under the hood so it does not actually receive the SIG calls from an scancel that are necessary to clean up properly. 
